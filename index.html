@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Relógio de Ponto Eletrônico</title>
+ <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.19/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+    header {
+      background-color: #1e40af;
+      color: white;
+      padding: 20px 40px;
+      font-size: 20px;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    main {
+      padding: 40px;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+    }
+    h2 {
+      margin-bottom: 20px;
+      font-size: 22px;
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    button {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      background-color: #3b82f6;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #2563eb;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 14px;
+    }
+    th {
+      background-color: #f1f5f9;
+      font-weight: 600;
+    }
+    .hidden {
+      display: none;
+    }
+    .footer {
+      font-size: 12px;
+      text-align: center;
+      margin-top: 10px;
+    }
+    #loginSection {
+      max-width: 400px;
+      margin: 80px auto;
+      padding: 30px;
+      background: white;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      text-align: center;
+    }
+    #loginSection input {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>Seja Bem-vindo! <span id="nomeUsuario"></span></div>
+    <div>
+      <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi1vNYeLi25WATo3zrj5vbF4Jkw-MipJYK0m31snRH6XVY4Qd9MgIMNCeUulSJcw2mlcMjiIG__g673Z_GOTQWHMwOZt6THEVxTiJqbcuXrH3g6CtcRV_IwRh5OZ0KptKmQf-BaznDU2F3VzN7QF1Own3fA2_JPST9MsNyTCs9fm135FV1kQ4DDNh16gJEW/s500/logo.jpg" alt="Ícone de calendário" style="width: 60px; height: 75px;">
+    </div>
+  </header>
+
+  <!-- Login Section -->
+  <div id="loginSection">
+    <h1>Login</h1>
+    <input type="text" id="username" placeholder="Usuário">
+    <input type="password" id="password" placeholder="Senha">
+    <button onclick="login()">Entrar</button>
+  </div>
+
+  <!-- Operacional Section -->
+  <div id="operacionalSection" class="hidden">
+    <main class="card">
+      <h2>Registro de Ponto</h2>
+      <div class="relogio">
+        <div id="dataAtual"></div>
+        <div id="horaAtual"></div>
+      </div>
+      <hr>
+      <div id="botoesRegistro" class="controls"></div>
+      <hr>
+      <h2>Marcações efetuadas</h2>
+      <div id="registrosUsuario"></div>
+      <hr>
+      <button onclick="logout()">Sair</button>
+    </main>
+  </div>
+
+  <!-- Admin Section -->
+  <div id="adminSection" class="hidden">
+    <main class="card">
+      <h2>Cartão de Ponto por Funcionário</h2>
+      <select id="funcionarioSelect" onchange="mostrarCartaoFuncionario()">
+        <option value="">Selecione um funcionário</option>
+      </select>
+      <input type="date" id="dataInicio">
+      <input type="date" id="dataFim">
+      <select id="tipoRelatorio">
+        <option value="simples">Relatório Simples</option>
+        <option value="comGeo">Relatório com Geolocalização</option>
+      </select>
+      <button onclick="gerarRelatorioMensal()">Gerar Relatório</button>
+      <div id="cartaoFuncionario"></div>
+      <button onclick="gerarPDF()">Exportar PDF</button>
+      <button onclick="gerarExcel()">Exportar Excel</button>
+      <button onclick="logout()">Sair</button>
+    </main>
+  </div>
+
+<script>
+  const users = {
+    admin: { password: "admin123", role: "admin" },
+    joao: { password: "1234", role: "operacional", pis: "123.45678.90-1" },
+    maria: { password: "abcd", role: "operacional", pis: "987.65432.10-9" },
+    lore:  { password: "ab", role: "operacional", pis: "988.65432.10-9" }
+  };
+
+  let currentUser = null;
+
+  function login() {
+    const user = document.getElementById("username").value.trim();
+    const pass = document.getElementById("password").value.trim();
+    if (users[user] && users[user].password === pass) {
+      currentUser = user;
+      document.getElementById("nomeUsuario").textContent = user;
+      document.getElementById("loginSection").classList.add("hidden");
+      if (users[user].role === "admin") {
+        document.getElementById("adminSection").classList.remove("hidden");
+        preencherListaFuncionarios();
+      } else {
+        document.getElementById("operacionalSection").classList.remove("hidden");
+        mostrarDataHora();
+        mostrarRegistrosUsuario();
+      }
+    } else {
+      alert("Usuário ou senha inválidos.");
+    }
+  }
+
+  function logout() {
+    currentUser = null;
+    location.reload();
+  }
+
+  function registrar(tipo) {
+    const agora = new Date();
+    const horario = agora.toLocaleTimeString();
+    const data = agora.toLocaleDateString();
+    navigator.geolocation.getCurrentPosition(pos => {
+      const coords = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+      let dados = JSON.parse(localStorage.getItem("registros") || "{}");
+      if (!dados[currentUser]) dados[currentUser] = {};
+      if (!dados[currentUser][data]) dados[currentUser][data] = {};
+      dados[currentUser][data][tipo] = horario;
+      dados[currentUser][data]["geo" + tipo.charAt(0).toUpperCase() + tipo.slice(1)] = coords;
+      localStorage.setItem("registros", JSON.stringify(dados));
+      mostrarRegistrosUsuario();
+    });
+  }
+
+  function mostrarRegistrosUsuario() {
+    const div = document.getElementById("registrosUsuario");
+    const dados = JSON.parse(localStorage.getItem("registros") || "{}");
+    const hoje = new Date().toLocaleDateString();
+    const registros = dados[currentUser]?.[hoje] || {};
+    div.innerHTML = `
+      <div><strong>Entrada:</strong> ${registros.entrada || ""}</div>
+      <div><strong>Saída Almoço:</strong> ${registros.saidaAlmoco || ""}</div>
+      <div><strong>Retorno Almoço:</strong> ${registros.retornoAlmoco || ""}</div>
+      <div><strong>Saída:</strong> ${registros.saida || ""}</div>
+    `;
+
+    const botoesDiv = document.getElementById("botoesRegistro");
+    botoesDiv.innerHTML = "";
+
+    if (!registros.entrada) {
+      botoesDiv.innerHTML = `<button onclick="registrar('entrada')">Registrar Entrada</button>`;
+    } else if (!registros.saidaAlmoco) {
+      botoesDiv.innerHTML = `<button onclick="registrar('saidaAlmoco')">Registrar Saída para Almoço</button>`;
+    } else if (!registros.retornoAlmoco) {
+      botoesDiv.innerHTML = `<button onclick="registrar('retornoAlmoco')">Registrar Retorno do Almoço</button>`;
+    } else if (!registros.saida) {
+      botoesDiv.innerHTML = `<button onclick="registrar('saida')">Registrar Saída</button>`;
+    } else {
+      botoesDiv.innerHTML = `<p>✅ Jornada concluída para hoje.</p>`;
+    }
+  }
+
+ function mostrarDataHora() {
+  const dataEl = document.getElementById("dataAtual");
+  const horaEl = document.getElementById("horaAtual");
+  function atualizar() {
+    const agora = new Date();
+    dataEl.textContent = "Data: " + agora.toLocaleDateString();
+    horaEl.textContent = "Hora: " + agora.toLocaleTimeString();
+  }
+  setInterval(atualizar, 1000);
+  atualizar();
+}
+
+ function preencherListaFuncionarios() {
+  const select = document.getElementById("funcionarioSelect");
+  Object.keys(users).forEach(user => {
+    if (users[user].role === "operacional") {
+      const option = document.createElement("option");
+      option.value = user;
+      option.textContent = user;
+      select.appendChild(option);
+    }
+  });
+}function mostrarCartaoFuncionario() {
+  const usuario = document.getElementById("funcionarioSelect").value;
+  const dataInicio = document.getElementById("dataInicio").value;
+  const dataFim = document.getElementById("dataFim").value;
+  const tipoRelatorio = document.getElementById("tipoRelatorio").value;
+  if (!usuario || !dataInicio || !dataFim) {
+    alert("Selecione um funcionário e intervalo de datas.");
+    return;
+  }
+
+  const dados = JSON.parse(localStorage.getItem("registros") || "{}");
+  const registros = dados[usuario] || {};
+  const container = document.getElementById("cartaoFuncionario");
+  let html = `
+    <table id="tabelaRelatorio">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Entrada</th>
+          <th>Saída Almoço</th>
+          <th>Retorno Almoço</th>
+          <th>Saída</th>
+          <th>Saldo</th>
+  `;
+  if (tipoRelatorio === "comGeo") {
+    html += `
+      <th>Geo Entrada</th>
+      <th>Geo Saída Almoço</th>
+      <th>Geo Retorno</th>
+      <th>Geo Saída</th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  const dataAtual = new Date(dataInicio);
+  const fim = new Date(dataFim);
+  while (dataAtual <= fim) {
+    const dataStr = dataAtual.toLocaleDateString();
+    const r = registros[dataStr] || {};
+    const saldo = calcularSaldo(r);
+    html += `<tr>
+      <td>${dataStr}</td>
+      <td>${r.entrada || ""}</td>
+      <td>${r.saidaAlmoco || ""}</td>
+      <td>${r.retornoAlmoco || ""}</td>
+      <td>${r.saida || ""}</td>
+      <td>${saldo}</td>`;
+    if (tipoRelatorio === "comGeo") {
+      html += `
+      <td>${r.geoEntrada || ""}</td>
+      <td>${r.geoSaidaAlmoco || ""}</td>
+      <td>${r.geoRetornoAlmoco || ""}</td>
+      <td>${r.geoSaida || ""}</td>`;
+    }
+    html += `</tr>`;
+    dataAtual.setDate(dataAtual.getDate() + 1);
+  }
+  html += "</tbody></table>";
+  container.innerHTML = html;
+}
+
+function calcularSaldo(r) {
+  if (r.entrada && r.saida) {
+    const hEntrada = toMinutes(r.entrada);
+    const hSaida = toMinutes(r.saida);
+    const almoco = (r.saidaAlmoco && r.retornoAlmoco) ? toMinutes(r.retornoAlmoco) - toMinutes(r.saidaAlmoco) : 0;
+    const total = hSaida - hEntrada - almoco;
+    return `${Math.floor(total / 60).toString().padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}`;
+  }
+  return "";
+}
+
+function toMinutes(hora) {
+  const [h, m, s] = hora.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function gerarRelatorioMensal() {
+  mostrarCartaoFuncionario();
+}
+
+
+function gerarRelatorioMensal() {
+  const user = document.getElementById("funcionarioSelect").value;
+  const tipoRelatorio = document.getElementById("tipoRelatorio").value;
+  const dataInicio = document.getElementById("dataInicio").value;
+  const dataFim = document.getElementById("dataFim").value;
+
+  const container = document.getElementById("cartaoFuncionario");
+  container.innerHTML = "";
+  if (!user || !dataInicio || !dataFim) return alert("Preencha todos os campos.");
+
+  const dados = JSON.parse(localStorage.getItem("registros") || "{}");
+  const registros = dados[user] || {};
+  const nomeFuncionario = user;
+  const pis = users[user]?.pis || "—";
+  const dataIni = new Date(dataInicio);
+  const dataFi = new Date(dataFim);
+
+  // Feriados esperados no formato ["DD/MM/YYYY", ...]
+  const feriados = JSON.parse(localStorage.getItem("feriados") || "[]");
+
+  const cabecalhoHTML = `
+    <div class="relatorio-cabecalho" style="margin-bottom: 15px;">
+      <p><strong>Empresa:</strong> LORE SERVIÇOS</p>
+      <p><strong>CNPJ:</strong> 50.743.220.0001-83</p>
+      <p><strong>Endereço:</strong> Rua Madagascar, 537 – Recanto Maravilha III – Santana de Parnaíba – CEP 06523-050 – SP</p>
+      <p><strong>Funcionário:</strong> ${nomeFuncionario}</p>
+      <p><strong>PIS:</strong> ${pis}</p>
+      <p><strong>Período:</strong> ${dataInicio.split("-").reverse().join("/")} a ${dataFim.split("-").reverse().join("/")}</p>
+    </div>
+  `;
+  container.innerHTML = cabecalhoHTML;
+
+  let tabelaHTML = `
+    <table border="1" cellspacing="0" cellpadding="5" style="width: 100%; border-collapse: collapse; font-size: 14px;">
+      <thead style="background-color: #f1f5f9;">
+        <tr>
+          <th>Data</th>
+          <th>Dia</th>
+          <th>Entrada</th>
+          <th>Saída Almoço</th>
+          <th>Retorno Almoço</th>
+          <th>Saída</th>
+          <th>Saldo</th>
+  `;
+  if (tipoRelatorio === "comGeo") {
+    tabelaHTML += `
+          <th>Geo Entrada</th>
+          <th>Geo Saída Almoço</th>
+          <th>Geo Retorno Almoço</th>
+          <th>Geo Saída</th>
+    `;
+  }
+  tabelaHTML += `</tr></thead><tbody>`;
+
+  // Função auxiliar para converter "HH:mm:ss" ou "HH:mm" em minutos
+  function horaParaMinutos(horaStr) {
+    if (!horaStr) return 0;
+    const parts = horaStr.split(":");
+    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+  }
+
+  // Função para formatar minutos em "HH:mm"
+  function minutosParaHora(minutos) {
+    const sinal = minutos < 0 ? "-" : "";
+    minutos = Math.abs(minutos);
+    const h = Math.floor(minutos / 60);
+    const m = minutos % 60;
+    return sinal + String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+  }
+
+  // Filtrar datas dentro do intervalo e ordenar
+  const datas = Object.keys(registros)
+    .filter(dataStr => {
+      // dataStr no formato DD/MM/YYYY
+      const [dia, mes, ano] = dataStr.split("/");
+      const dataObj = new Date(ano, mes - 1, dia);
+      return dataObj >= dataIni && dataObj <= dataFi;
+    })
+    .sort((a, b) => {
+      const [diaA, mesA, anoA] = a.split("/");
+      const [diaB, mesB, anoB] = b.split("/");
+      return new Date(anoA, mesA - 1, diaA) - new Date(anoB, mesB - 1, diaB);
+    });
+
+  let totalMinutosTrabalhados = 0;
+
+  for (let data of datas) {
+    const registro = registros[data];
+    const entrada = registro.entrada || "";
+    const saidaAlmoco = registro.saidaAlmoco || "";
+    const retornoAlmoco = registro.retornoAlmoco || "";
+    const saida = registro.saida || "";
+
+    // Calcular saldo = (saida - entrada) - (retornoAlmoco - saidaAlmoco)
+    let minutosTrabalhados = 0;
+    if (entrada && saida) {
+      const inicio = horaParaMinutos(entrada);
+      const fim = horaParaMinutos(saida);
+      let almoco = 0;
+      if (saidaAlmoco && retornoAlmoco) {
+        almoco = horaParaMinutos(retornoAlmoco) - horaParaMinutos(saidaAlmoco);
+      }
+      minutosTrabalhados = (fim - inicio) - almoco;
+    }
+
+    totalMinutosTrabalhados += minutosTrabalhados;
+
+    // Dia da semana ou feriado
+    let diaSemana = "";
+    const [dia, mes, ano] = data.split("/");
+    const dt = new Date(ano, mes - 1, dia);
+    const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    if (feriados.includes(data)) {
+      diaSemana = "Feriado";
+    } else {
+      diaSemana = diasSemana[dt.getDay()];
+    }
+
+    tabelaHTML += `<tr>
+      <td>${data}</td>
+      <td>${diaSemana}</td>
+      <td>${entrada}</td>
+      <td>${saidaAlmoco}</td>
+      <td>${retornoAlmoco}</td>
+      <td>${saida}</td>
+      <td>${minutosParaHora(minutosTrabalhados)}</td>
+    `;
+
+    if (tipoRelatorio === "comGeo") {
+      tabelaHTML += `
+        <td>${registro.geoEntrada || ""}</td>
+        <td>${registro.geoSaidaAlmoco || ""}</td>
+        <td>${registro.geoRetornoAlmoco || ""}</td>
+        <td>${registro.geoSaida || ""}</td>
+      `;
+    }
+
+    tabelaHTML += `</tr>`;
+  }
+
+  // Totais no rodapé
+  tabelaHTML += `
+    </tbody>
+    <tfoot style="background-color: #f1f5f9; font-weight: 600;">
+      <tr>
+        <td colspan="${tipoRelatorio === "comGeo" ? 6 : 6}">Total de Horas Trabalhadas no Período:</td>
+        <td>${minutosParaHora(totalMinutosTrabalhados)}</td>
+  `;
+
+  if (tipoRelatorio === "comGeo") {
+    tabelaHTML += `<td colspan="4"></td>`;
+  }
+
+  tabelaHTML += `</tr></tfoot></table>`;
+
+  container.innerHTML += tabelaHTML;
+}
+
+function gerarPDF(dias, funcionarioSelecionado, tipoRelatorio, dataInicio, dataFim) {
+  const doc = new jsPDF();
+  const imgData = document.getElementById("logo").src;
+
+  doc.addImage(imgData, "PNG", 14, 10, 30, 10);
+  doc.setFontSize(10);
+  doc.text("LORE SERVIÇOS", 14, 25);
+  doc.text("CNPJ: 50.743.220.0001-83", 14, 29);
+  doc.text("Rua Madagascar, 537 – Recanto Maravilha III – Santana de Parnaíba – SP", 14, 33);
+  doc.text(`Período: ${dataInicio} até ${dataFim}`, 14, 37);
+  doc.text(`Funcionário: ${funcionarioSelecionado}`, 14, 41);
+  doc.text(`PIS: 123.45678.90-1`, 14, 45); // Substituir se necessário
+
+  const headersSimples = ["Data", "Dia", "Entrada", "Saída Almoço", "Retorno", "Saída", "Saldo"];
+  const headersGeo = [...headersSimples, "Geo Entrada", "Geo Saída Almoço", "Geo Retorno", "Geo Saída"];
+  const headers = tipoRelatorio === "geo" ? headersGeo : headersSimples;
+
+  const formatarDuracao = (segundos) => {
+    if (isNaN(segundos) || segundos < 0) return "00:00:00";
+    const h = String(Math.floor(segundos / 3600)).padStart(2, '0');
+    const m = String(Math.floor((segundos % 3600) / 60)).padStart(2, '0');
+    const s = String(segundos % 60).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  };
+
+  const body = [];
+  let totalHoras = 0;
+  let totalExtras = 0;
+  let totalAtrasos = 0;
+
+  dias.forEach(dia => {
+    const {
+      data,
+      diaSemana,
+      entrada,
+      saidaAlmoco,
+      retornoAlmoco,
+      saida,
+      geoEntrada,
+      geoSaidaAlmoco,
+      geoRetorno,
+      geoSaida
+    } = dia;
+
+    let saldo = "00:00:00";
+
+    if (entrada && saida && entrada.includes(":") && saida.includes(":")) {
+      const h1 = new Date(`1970-01-01T${entrada}:00`);
+      const h2 = new Date(`1970-01-01T${saida}:00`);
+      let segundosTrabalhados = (h2 - h1) / 1000;
+
+      if (saidaAlmoco && retornoAlmoco && saidaAlmoco.includes(":") && retornoAlmoco.includes(":")) {
+        const almoco1 = new Date(`1970-01-01T${saidaAlmoco}:00`);
+        const almoco2 = new Date(`1970-01-01T${retornoAlmoco}:00`);
+        segundosTrabalhados -= (almoco2 - almoco1) / 1000;
+      }
+
+      saldo = formatarDuracao(Math.round(segundosTrabalhados));
+      totalHoras += segundosTrabalhados / 3600;
+
+      if (segundosTrabalhados > 28800) totalExtras += (segundosTrabalhados - 28800) / 3600;
+      if (segundosTrabalhados < 28800) totalAtrasos += (28800 - segundosTrabalhados) / 3600;
+    }
+
+    const row = [data, diaSemana, entrada, saidaAlmoco, retornoAlmoco, saida, saldo];
+    if (tipoRelatorio === "geo") {
+      row.push(geoEntrada, geoSaidaAlmoco, geoRetorno, geoSaida);
+    }
+    body.push(row);
+  });
+
+  doc.autoTable({
+    startY: 50,
+    head: [headers],
+    body: body,
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [41, 128, 185] }
+  });
+
+  const finalY = doc.lastAutoTable?.finalY + 5 || 55;
+
+  const saldoFinalSegundos = (totalHoras - (dias.length * 8)) * 3600;
+
+  doc.text(`Total de Horas Trabalhadas: ${formatarDuracao(Math.round(totalHoras * 3600))}`, 14, finalY);
+  doc.text(`Total de Horas Extras: ${formatarDuracao(Math.round(totalExtras * 3600))}`, 14, finalY + 5);
+  doc.text(`Total de Atrasos: ${formatarDuracao(Math.round(totalAtrasos * 3600))}`, 14, finalY + 10);
+  doc.text(`Saldo Final: ${formatarDuracao(Math.round(saldoFinalSegundos))}`, 14, finalY + 15);
+  doc.text(`Assinatura do Funcionário: _________________________________`, 14, finalY + 25);
+
+  doc.save(`espelho-ponto-${funcionarioSelecionado}.pdf`);
+}
+
+// Função para gerar Excel
+function gerarExcel() {
+  const tabela = document.querySelector("#cartaoFuncionario table");
+  if (!tabela) return alert("Nenhuma tabela para exportar.");
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.table_to_sheet(tabela);
+  XLSX.utils.book_append_sheet(wb, ws, "Relatorio");
+
+  const dataInicio = document.getElementById("dataInicio").value;
+  const dataFim = document.getElementById("dataFim").value;
+  const funcionario = document.getElementById("funcionarioSelect").value;
+
+  XLSX.writeFile(wb, `relatorio_${funcionario}_${dataInicio}_a_${dataFim}.xlsx`);
+}
+</script>
+</body>
+</html>
